@@ -42,13 +42,14 @@ sub _New {
         pipe( $smoke, $stoke )
             or  _croak( "Can't ignite pipe: $!\n" );
     } else {
-        if( ! -e $path ) {
+        if( $perm && ! -e $path ) {
             require POSIX;
             POSIX->import('mkfifo');    # In case import() says 'unsupported'.
             mkfifo( $path, $perm )
                 or  _croak( "Can't create FIFO ($path): $!\n" );
         }
-        sysopen $smoke, $path, O_RDONLY()|O_NONBLOCK(), $perm||0666
+        my $extra = $perm ? O_NONBLOCK() : 0;
+        sysopen $smoke, $path, O_RDONLY()|$extra, $perm
             or  _croak( "Can't read pipe path ($path): $!\n" );
         sysopen $stoke, $path, O_WRONLY()
             or  _croak( "Can't write pipe path ($path): $!\n" );
@@ -301,8 +302,8 @@ To use it as a semaphore / LRU:
 
 =head1 EXPORTS
 
-There is 1 function that you can request to be exported into your package.
-It serves to prevent you from having to type the rather long module name
+There are 2 functions that you can request to be exported into your package.
+They serve to prevent you from having to type the rather long module name
 (IPC::Semaphore::SmokeSignals) more than once.
 
 =head2 LightUp
@@ -367,6 +368,24 @@ The third argument, C<$perm>, if given, overrides the default permissions
 (0666) to use if a new FIFO is created.  Your umask will be applied (by the
 OS) to get the permissions actually used.
 
+=head2 JoinUp
+
+C<JoinUp()> connects to an existing named pipe (FIFO):
+
+    use IPC::Semaphore::SmokeSignals 'JoinUp';
+
+    $pipe = JoinUp( $bytes, $path );
+
+C<JoinUp(...)> is just short for:
+
+    IPC::Semaphore::SmokeSignals->JoinIn(...);
+
+The C<$bytes> argument must be the number of bytes of each tokin' used when
+the FIFO was created by LightUp().
+
+The FIFO must already exist (at C<$path>).  The call to C<JoinUp()> can
+block waiting for the creator to connect to the FIFO.
+
 =head1 METHODS
 
 =head2 Ignite
@@ -374,6 +393,12 @@ OS) to get the permissions actually used.
     my $pipe = IPC::Semaphore::SmokeSignals->Ignite( $fuel, $path, $perm );
 
 See L<LightUp>.
+
+=head2 JoinIn
+
+    my $pipe = IPC::Semaphore::SmokeSignals->JoinIn( $bytes, $path );
+
+See L<JoinUp>.
 
 =head2 Puff
 
