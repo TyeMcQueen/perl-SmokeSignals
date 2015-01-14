@@ -171,6 +171,8 @@ sub _MagicDragon {  # Every magic dragon needs a good name.
 sub Puff {          # Get a magic dragon so you won't forget to share.
     my( $me, $impatient ) = @_;
     if( defined $me->[_PUFFS] && $me->[_PUFFS] <= 0 ) {
+        return
+            if  wantarray;
         _croak( "The pipe is going out.\n" );
     }
     return $me->_MagicDragon()->_Inhale( $me, $impatient );
@@ -198,6 +200,8 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
     if( $puff !~ /[^\0]/ ) {
         $me->_Stoke( $puff );
         $me->[_PUFFS] //= 0;    # Mark pipe as somebody else is putting it out.
+        return
+            if  wantarray;
         _croak( "The pipe is going out.\n" );
     }
     return $puff;
@@ -257,8 +261,9 @@ push @CARP_NOT, __PACKAGE__;
 
 sub _Inhale {
     my( $class, $pipe, $impatient ) = @_;
-    my $puff = $pipe->_Bogart($impatient)
-        or  return undef;
+    my( $puff ) = $pipe->_Bogart($impatient)
+        or  return;
+    $puff   or  return undef;
     return bless [ $pipe, $puff ], $class;
 }
 
@@ -521,6 +526,27 @@ If the initializer of the pipe has called C<Extinguish()> on the pipe, then
 any calls to C<Puff()> (in any process) can die with the message:
 
     "The pipe is going out.\n"
+
+Or, you can call C<Puff()> in a list context so that, instead of die()ing, it
+will just return 0 items.  For example:
+
+    {
+        my( $dragon ) = $pipe->Puff('impatient')
+            or  return 'done';
+        if( ! $dragon ) {
+            warn "Can't do that right now.\n";
+        } else {
+            # This code must never run more than $N times at once:
+            ...
+        }
+    }
+
+The C<or return> is only run if C<$pipe> has been C<Extinguish()>ed.  For
+example, when C<Puff()> returns an C<undef>, the list assignment will return
+the number of values assigned (1), which is a true value, preventing the
+C<or return> from running.
+
+Or you can just not worry about this by not calling C<Extinguish()>.
 
 =head2 Sniff
 
