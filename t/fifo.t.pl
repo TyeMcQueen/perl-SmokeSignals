@@ -14,7 +14,7 @@ BEGIN {
     }
 }
 
-use IPC::Semaphore::SmokeSignals qw< JoinUp >;
+use IPC::Semaphore::SmokeSignals qw< MeetUp >;
 
 my $mod = 'IPC::Semaphore::SmokeSignals';
 my $fifo = "/tmp/fifo." . getppid();
@@ -27,7 +27,7 @@ alarm( 10 );
 my $pipe;
 {
     local $SIG{__WARN__} = sub { };
-    $pipe = JoinUp( length(2), $fifo, 0666 );
+    $pipe = MeetUp( ['a'..'b'], $fifo, 0666 );
 }
 warn "# Pulling\n";
 {

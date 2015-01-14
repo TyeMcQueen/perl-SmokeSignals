@@ -17,7 +17,7 @@ BEGIN {
     }
 }
 
-use IPC::Semaphore::SmokeSignals qw< LightUp >;
+use IPC::Semaphore::SmokeSignals qw< MeetUp >;
 
 sub async {
     return  # Parent
@@ -36,7 +36,7 @@ END { unlink $fifo if $fifo; }
 # Make this test die if it ever hangs:
 alarm( 10 );
 
-my $pipe = LightUp( 2, $fifo, 0666 );
+my $pipe = MeetUp( 2, $fifo, 0666 );
 
 True( $pipe, 'Can create a pipe' );
 
