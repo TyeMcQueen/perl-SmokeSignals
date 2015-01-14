@@ -26,7 +26,7 @@ sub async {
     die "Can't exec: $!\n";
 }
 
-plan( tests => 4 );
+plan( tests => 7 );
 
 my $mod = 'IPC::Semaphore::SmokeSignals';
 my $fifo = "/tmp/fifo.$$";
@@ -36,7 +36,10 @@ END { unlink $fifo if $fifo; }
 # Make this test die if it ever hangs:
 alarm( 10 );
 
-my $pipe = MeetUp( 2, $fifo, 0666 );
+my $pipe;
+Warns( 'Warns when creating', sub {
+    $pipe = MeetUp( 2, $fifo, 0666 );
+}, qr/\Q$fifo/, 'creat' );
 
 True( $pipe, 'Can create a pipe' );
 
