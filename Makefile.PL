@@ -14,6 +14,7 @@ WriteMakefile(
         'IO::Handle' => 0,              # in 'core'
         'Exporter' => 0,                # in 'core'
         'bytes' => 0,                   # in 'core'
+        'Errno' => 0,                   # in 'core'
         'Carp' => 0,                    # in 'core'
         # Testing only:
         'File::Basename' => 0,          # in 'core'
