@@ -16,7 +16,7 @@ BEGIN {
     }
 }
 
-plan( tests => 8 );
+plan( tests => 10 );
 
 require IPC::Semaphore::SmokeSignals;
 my $mod = 'IPC::Semaphore::SmokeSignals';
@@ -41,9 +41,13 @@ True( $pipe, 'Can create a pipe' );
 my $dragon = $pipe->Puff();
 True( $dragon, 'Can toke' );
 
+False( $pipe->Puff(1), 'Impatience fails' );
+
 undef $dragon;
 $dragon = $pipe->Puff();
 True( $dragon, 'Can re-toke' );
+
+False( $pipe->Puff(1), 'Impatience re-fails' );
 
 $dragon->Exhale();
 my $puff = $pipe->Puff();
