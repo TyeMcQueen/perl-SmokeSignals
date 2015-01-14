@@ -2,7 +2,7 @@ package IPC::Semaphore::SmokeSignals;
 use strict;
 use vars qw( $VERSION @EXPORT_OK );
 BEGIN {
-    $VERSION= 0.001_001;
+    $VERSION= 0.001_002;
     @EXPORT_OK= qw( LightUp );
     require IO::Handle;
     require Exporter;
