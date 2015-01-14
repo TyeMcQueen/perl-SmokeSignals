@@ -54,7 +54,7 @@ my $puff = $pipe->Puff();
 True( $puff, 'Can re-toke after Exhale' );
 undef $puff;
 
-True( $pipe->Extinguish(), "Can extinguish" );
+False( $pipe->Extinguish(), "Can extinguish" );
 
 Dies( "Exceeding your system buffer size fails", sub {
     LightUp(99999)
