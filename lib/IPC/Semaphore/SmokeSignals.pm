@@ -116,7 +116,7 @@ sub _Stoke {        # Return some magic smoke (skipping proper protocol).
         _croak( "Tokin' ($puff) is ", length($puff), " bytes, not $bytes!" );
     }
     syswrite( $stoke, $puff )
-        or  die "Can't stoke pipe: $!\n";
+        or  die "Can't stoke pipe (with '$puff'): $!\n";
 }
 
 
