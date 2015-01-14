@@ -231,15 +231,31 @@ sub Extinguish {    # Last call!
     return $me->[_PUFFS]        # We didn't or we already put it out.
         if  ! $me->[_PUFFS];
     if( 0 < $me->[_PUFFS] ) {   # Our first try at shutting down.
+        $me->_Stoke( "\0" x $me->[_BYTES] );    # Send an EOP tokin'.
         $me->[_PUFFS] *= -1;    # Mark that we started shutting down.
     }
+    my $eop;                    # Are we holding on to the EOP tokin'?
     for my $puffs (  $me->[_PUFFS]  ) {
-        while(  $puffs  ) {
-            my $puff = $me->_Bogart( $impatient );
+        while( 1 ) {
+            my $puff = $me->_Bogart( $impatient, 'nil' );
             if( ! defined $puff ) {     # Pipe empty:
-                return -$puffs;         # Tell caller: somebody needs time.
+                last                    # Also, no tokins; all puffed out!
+                    if  ! $puffs && $eop;   # (We even drained the EOP.)
+                $me->_Stoke( $eop )     # Keep others shutting down.
+                    if  $eop;
+                return -$puffs + ($eop?0:1);    # Report: others need time.
             }
-            ++$puffs;   # Modifies $me->[_PUFFS].
+            if( $puff =~ /[^\0]/ ) {    # We eliminated another non-EOP tokin':
+                ++$puffs;   # Modifies $me->[_PUFFS].
+                if( $puffs && $eop ) {  # Others reading and no EOP in pipe:
+                    $me->_Stoke( $eop );    # Put the EOP back.
+                    $eop = '';
+                }
+            } elsif( ! $puffs ) {       # Got the EOP and were no tokins left:
+                last;                   # All puffed out!
+            } else {                    # Got EOP, some tokins still out:
+                $eop = $puff;           # Note we may need to put the EOP back.
+            }
         }
     }
     close $me->[_STOKE];
