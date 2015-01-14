@@ -16,7 +16,7 @@ BEGIN {
     }
 }
 
-plan( tests => 14 );
+plan( tests => 20 );
 
 require IPC::Semaphore::SmokeSignals;
 my $mod = 'IPC::Semaphore::SmokeSignals';
@@ -34,6 +34,18 @@ Okay( undef, *LightUp{CODE}, 'LightUp not imported by default' );
 $mod->import('LightUp');
 Okay( sub{\&IPC::Semaphore::SmokeSignals::LightUp},
     sub{*LightUp{CODE}}, 'LightUp imported explicitly' );
+
+Okay( *JoinUp{CODE}, *MeetUp{CODE}, 'JoinUp MeetUp not here' );
+$mod->import('JoinUp');
+Okay( sub{\&IPC::Semaphore::SmokeSignals::JoinUp},
+    sub{*JoinUp{CODE}}, 'JoinUp imported explicitly' );
+$mod->import('MeetUp');
+Okay( sub{\&IPC::Semaphore::SmokeSignals::MeetUp},
+    sub{*MeetUp{CODE}}, 'MeetUp imported explicitly' );
+
+Dies( "Can't export nonsense", sub {
+    $mod->import('Ignite');
+}, qr/Ignite/, qr/not export/ );
 
 my $pipe = LightUp();
 True( $pipe, 'Can create a pipe' );
