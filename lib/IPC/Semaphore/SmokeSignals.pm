@@ -48,6 +48,8 @@ sub _New {
             or  _croak( "Can't ignite pipe: $!\n" );
     } else {
         if( $perm && ! -e $path ) {
+            warn "WARNING: Having to create FIFO: $path\n"
+                if  $nowait;
             require POSIX;
             POSIX->import('mkfifo');    # In case import() says 'unsupported'.
             mkfifo( $path, $perm )
@@ -445,7 +447,7 @@ exist.  This is because deleting the FIFO makes it possible for there to be
 a race during initialization.
 
 If you pass in a true value for C<$perm>, likely C<0666>, then the FIFO will
-be created if needed.
+be created if needed (but this will also trigger a warning).
 
 =head1 METHODS
 
