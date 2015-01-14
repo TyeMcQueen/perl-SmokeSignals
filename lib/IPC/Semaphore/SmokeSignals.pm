@@ -24,26 +24,38 @@ sub LightUp {   # Set up a new pipe.
 }
 
 
-sub Ignite {    # Set up a new pipe.
-    my( $class, @fuel ) = @_;
-    $class ||= __PACKAGE__;
-    @fuel = 1
-        if  ! @fuel;
-    my $bytes = length $fuel[0];
+sub _New {
+    my( $class, $bytes ) = @_;
+
     my $smoke = IO::Handle->new();
     my $stoke = IO::Handle->new();
     pipe( $smoke, $stoke )
         or  _croak( "Can't ignite pipe: $!\n" );
     binmode $smoke;
     binmode $stoke;
+
     my $me = bless [], $class;
     $me->[_SMOKE] = $smoke;
     $me->[_STOKE] = $stoke;
     $me->[_BYTES] = $bytes;
+
+    return $me;
+}
+
+
+sub Ignite {    # Set up a new pipe.
+    my( $class, @fuel ) = @_;
+    $class ||= __PACKAGE__;
+    @fuel = 1
+        if  ! @fuel;
+    my $bytes = length $fuel[0];
+    my $me = $class->_New( $bytes );
+
     $me->[_PUFFS] = 0 + @fuel;
     for my $puff (  @fuel  ) {
         $me->_Stoke( $puff );
     }
+
     return $me;
 }
 
