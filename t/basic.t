@@ -16,7 +16,7 @@ BEGIN {
     }
 }
 
-plan( tests => 5 );
+plan( tests => 8 );
 
 require IPC::Semaphore::SmokeSignals;
 my $mod = 'IPC::Semaphore::SmokeSignals';
@@ -26,7 +26,14 @@ Okay( 1, 1, 'Module loads' );
 # Make this test die if it ever hangs:
 alarm( 10 );
 
+Okay( undef, *LightUp{CODE}, 'LightUp not yet imported' );
+
+$mod->import();
+Okay( undef, *LightUp{CODE}, 'LightUp not imported by default' );
+
 $mod->import('LightUp');
+Okay( sub{\&IPC::Semaphore::SmokeSignals::LightUp},
+    sub{*LightUp{CODE}}, 'LightUp imported explicitly' );
 
 my $pipe = LightUp();
 True( $pipe, 'Can create a pipe' );
