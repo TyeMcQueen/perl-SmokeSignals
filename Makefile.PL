@@ -15,6 +15,9 @@ WriteMakefile(
         'Exporter' => 0,                # in 'core'
         'bytes' => 0,                   # in 'core'
         'Carp' => 0,                    # in 'core'
+        # Testing only:
+        'File::Basename' => 0,          # in 'core'
+        'lib' => 0,                     # in 'core'
     },
     $] < 5.005  ?  ()  :  (
         'AUTHOR'        => 'Tye McQueen',
