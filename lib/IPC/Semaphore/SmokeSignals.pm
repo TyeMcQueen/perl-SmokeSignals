@@ -1,12 +1,13 @@
 package IPC::Semaphore::SmokeSignals;
 use strict;
-use vars qw( $VERSION @EXPORT_OK );
+
+use vars qw< $VERSION @EXPORT_OK >;
 BEGIN {
-    $VERSION= 0.001_002;
-    @EXPORT_OK= qw( LightUp );
+    $VERSION = 0.001_002;
+    @EXPORT_OK = qw< LightUp >;
     require IO::Handle;
     require Exporter;
-    *import= \&Exporter::import;
+    *import = \&Exporter::import;
     if(  eval { require bytes; 1 }  ) {
         bytes->import();
     }
@@ -17,30 +18,28 @@ sub _bytes { 2 }
 sub _puffs { 3 }
 
 
-sub LightUp
-{
+sub LightUp {   # Set up a new pipe.
     return __PACKAGE__->Ignite( @_ );
 }
 
 
-sub Ignite
-{
-    my( $class, @fuel )= @_;
+sub Ignite {    # Set up a new pipe.
+    my( $class, @fuel ) = @_;
     $class ||= __PACKAGE__;
-    @fuel= 1
+    @fuel = 1
         if  ! @fuel;
-    my $bytes= length $fuel[0];
-    my $smoke= IO::Handle->new();
-    my $stoke= IO::Handle->new();
+    my $bytes = length $fuel[0];
+    my $smoke = IO::Handle->new();
+    my $stoke = IO::Handle->new();
     pipe( $smoke, $stoke )
         or  _croak( "Can't ignite pipe: $!\n" );
     binmode $smoke;
     binmode $stoke;
-    my $me= bless [], $class;
-    $me->[_smoke]= $smoke;
-    $me->[_stoke]= $stoke;
-    $me->[_bytes]= $bytes;
-    $me->[_puffs]= 0 + @fuel;
+    my $me = bless [], $class;
+    $me->[_smoke] = $smoke;
+    $me->[_stoke] = $stoke;
+    $me->[_bytes] = $bytes;
+    $me->[_puffs] = 0 + @fuel;
     for my $puff (  @fuel  ) {
         $me->_Stoke( $puff );
     }
@@ -48,23 +47,20 @@ sub Ignite
 }
 
 
-sub _MagicDragon
-{
+sub _MagicDragon {  # Every magic dragon needs a good name.
     return __PACKAGE__ . '::Puff';
 }
 
 
-sub Puff
-{
-    my( $me )= @_;
+sub Puff {          # Get a magic dragon so you won't forget to share.
+    my( $me ) = @_;
     return $me->_MagicDragon()->Inhale( $me );
 }
 
 
-sub _Bogart
-{
-    my( $me )= @_;
-    my( $smoke )= $me->[_smoke];
+sub _Bogart {       # Take a drag (skipping proper protocol).
+    my( $me ) = @_;
+    my( $smoke ) = $me->[_smoke];
     my $puff;
     sysread( $smoke, $puff, $me->[_bytes] )
         or  die "Can't toke pipe: $!\n";
@@ -72,11 +68,10 @@ sub _Bogart
 }
 
 
-sub _Stoke
-{
-    my( $me, $puff )= @_;
-    my $stoke= $me->[_stoke];
-    my $bytes= $me->[_bytes];
+sub _Stoke {        # Return some magic smoke (skipping proper protocol).
+    my( $me, $puff ) = @_;
+    my $stoke = $me->[_stoke];
+    my $bytes = $me->[_bytes];
     if(  $bytes != length $puff  ) {
         _croak( "Tokin ($puff) is ", length($puff), " bytes, not $bytes!" );
     }
@@ -85,9 +80,8 @@ sub _Stoke
 }
 
 
-sub Extinguish
-{
-    my( $me )= @_;
+sub Extinguish {    # Last call!
+    my( $me ) = @_;
     for my $puffs (  $me->[_puffs]  ) {
         while(  $puffs  ) {
             $me->_Bogart();
@@ -99,8 +93,7 @@ sub Extinguish
 }
 
 
-sub _croak
-{
+sub _croak {
     require Carp;
     Carp::croak( @_ );
 }
@@ -108,31 +101,27 @@ sub _croak
 
 package IPC::Semaphore::SmokeSignals::Puff;
 
-sub Inhale
-{
-    my( $class, $pipe )= @_;
-    my $puff= $pipe->_Bogart();
+sub Inhale {
+    my( $class, $pipe ) = @_;
+    my $puff = $pipe->_Bogart();
     return bless [ $pipe, $puff ], $class;
 }
 
-sub Sniff
-{
-    my( $me )= @_;
+sub Sniff {
+    my( $me ) = @_;
     return $me->[1];
 }
 
-sub Exhale
-{
-    my( $me )= @_;
+sub Exhale {
+    my( $me ) = @_;
     return
         if  ! @$me;
-    my( $pipe, $puff )= splice @$me;
+    my( $pipe, $puff ) = splice @$me;
     $pipe->_Stoke( $puff );
 }
 
-sub DESTROY
-{
-    my( $me )= @_;
+sub DESTROY {
+    my( $me ) = @_;
     $me->Exhale();
 }
 
@@ -146,14 +135,14 @@ IPC::Semaphore::SmokeSignals - A mutex and an LRU from crack pipe technology
 
 =head1 SYNOPSIS
 
-    use IPC::Semaphore::SmokeSignals qw( LightUp );
+    use IPC::Semaphore::SmokeSignals qw< LightUp >;
 
     BEGIN {
-        my $pipe= LightUp();
+        my $pipe = LightUp();
 
         sub threadSafe
         {
-            my $puff= $pipe->Puff();
+            my $puff = $pipe->Puff();
             # Only one thread will run this code at a time!
         }
     }
@@ -176,14 +165,14 @@ It also happens to give out tokins in LRU order (least recently used).
 To use it as a semaphore / LRU:
 
     BEGIN {
-        my $bong= LightUp( 0..9 );
+        my $bong = LightUp( 0..9 );
         my @pool;
 
         sub sharesResource
         {
-            my $dragon= $bong->Puff();
+            my $dragon = $bong->Puff();
             # Only 10 threads at once can run this code!
-            my $puff= $dragon->Sniff();
+            my $puff = $dragon->Sniff();
             # $puff is 0..9 and is unique among the threads here now
             Do_exclusive_stuff_with( $pool[$puff] );
             if(  ...  ) {
