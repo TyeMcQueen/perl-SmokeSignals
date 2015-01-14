@@ -12,6 +12,7 @@ BEGIN {
         bytes->import();
     }
 }
+use Errno   qw< EAGAIN EWOULDBLOCK >;
 
 sub _SMOKE { 0 }    # End to pull from.
 sub _STOKE { 1 }    # The lit end.
@@ -94,8 +95,11 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
         if  $impatient;
     return undef
         if  $impatient
-        &&  $got_none;
-    die "Can't toke pipe: $!\n"
+        &&  $got_none
+        &&  (   EAGAIN() == $excuse
+            ||  EWOULDBLOCK() == $excuse )
+    ;
+    _croak( "Can't toke pipe: $!\n" )
         if  $got_none;
     return $puff;
 }
