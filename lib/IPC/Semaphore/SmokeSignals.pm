@@ -66,7 +66,7 @@ sub _Bogart
     my( $me )= @_;
     my( $smoke )= $me->[_smoke];
     my $puff;
-    sysread( $smoke, $puff, 1 )
+    sysread( $smoke, $puff, $me->[_bytes] )
         or  die "Can't toke pipe: $!\n";
     return $puff;
 }
