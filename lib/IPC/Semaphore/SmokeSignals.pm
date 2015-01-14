@@ -13,6 +13,9 @@ BEGIN {
     }
 }
 use Errno   qw< EAGAIN EWOULDBLOCK >;
+use Fcntl   qw<
+    O_WRONLY    O_RDONLY    O_NONBLOCK
+>;
 
 sub _SMOKE { 0 }    # End to pull from.
 sub _STOKE { 1 }    # The lit end.
@@ -27,12 +30,25 @@ sub LightUp {   # Set up a new pipe.
 
 
 sub _New {
-    my( $class, $bytes ) = @_;
+    my( $class, $bytes, $path, $perm ) = @_;
 
     my $smoke = IO::Handle->new();
     my $stoke = IO::Handle->new();
-    pipe( $smoke, $stoke )
-        or  _croak( "Can't ignite pipe: $!\n" );
+    if( ! $path ) {
+        pipe( $smoke, $stoke )
+            or  _croak( "Can't ignite pipe: $!\n" );
+    } else {
+        if( ! -e $path ) {
+            require POSIX;
+            POSIX->import('mkfifo');    # In case import() says 'unsupported'.
+            mkfifo( $path, $perm )
+                or  _croak( "Can't create FIFO ($path): $!\n" );
+        }
+        sysopen $smoke, $path, O_RDONLY()|O_NONBLOCK(), $perm||0666
+            or  _croak( "Can't read pipe path ($path): $!\n" );
+        sysopen $stoke, $path, O_WRONLY()
+            or  _croak( "Can't write pipe path ($path): $!\n" );
+    }
     binmode $smoke;
     binmode $stoke;
 
@@ -46,11 +62,11 @@ sub _New {
 
 
 sub Ignite {    # Set up a new pipe.
-    my( $class, $fuel ) = @_;
+    my( $class, $fuel, $path, $perm ) = @_;
 
     ( $fuel, my $bytes ) = $class->_PickTheMix( $fuel );
 
-    my $me = $class->_New( $bytes );
+    my $me = $class->_New( $bytes, $path, $perm );
 
     $me->_Roll( $fuel );
 
@@ -283,9 +299,9 @@ happen at once.
 
     use IPC::Semaphore::SmokeSignals 'LightUp';
 
-    $pipe = LightUp( $fuel );
+    $pipe = LightUp( $fuel, $path, $perm );
 
-There are several ways you can specify C<$fuel>:
+To use an un-named pipe (such as if you are about to spawn some children):
 
     my $pipe = LightUp();
     # same as:
@@ -295,14 +311,22 @@ There are several ways you can specify C<$fuel>:
     # same as:
     my $pipe = LightUp(['01'..'50']);
 
+This has the advantages of requiring no clean-up and having no chance of
+colliding identifiers (unlike with SysV semaphores).
+
+You can also use a named pipe (FIFO):
+
+    my $pipe = LightUp( 8, "/var/run/my-app.pipe" );
+    # same as:
+    my $pipe = LightUp( 8, "/var/run/my-app.pipe", 0666 );
+    # same as:
+    my $pipe = LightUp( [1..8], "/var/run/my-app.pipe", 0666 );
+
 C<LightUp(...)> is just short for:
 
     IPC::Semaphore::SmokeSignals->Ignite(...);
 
-An un-named pipe is used.  This has the advantages of requiring no clean-up
-and having no chance of colliding identifiers (unlike with SysV semaphores).
-
-The only argument, C<$fuel>, if given, should be one of:
+The first argument, C<$fuel>, if given, should be one of:
 
 =over
 
@@ -322,11 +346,19 @@ C<12> is the same as C<['01'..'12']>.
 
 =back
 
+The second argument, C<$path>, if given, should give the path to a FIFO (or
+to where a FIFO should be created).  If C<$path> is not given or is a false
+value, then Perl's C<pipe()> function is called to create a non-named pipe.
+
+The third argument, C<$perm>, if given, overrides the default permissions
+(0666) to use if a new FIFO is created.  Your umask will be applied (by the
+OS) to get the permissions actually used.
+
 =head1 METHODS
 
 =head2 Ignite
 
-    my $pipe = IPC::Semaphore::SmokeSignals->Ignite( $fuel );
+    my $pipe = IPC::Semaphore::SmokeSignals->Ignite( $fuel, $path, $perm );
 
 See L<LightUp>.
 
@@ -403,9 +435,6 @@ discarding all of the tokins in it.
 =head1 PLANS
 
 A future version may allow for setting a maximum wait time.
-
-A future version will allow for using a named pipe to make it easy for several
-processes to share one pipe.
 
 =head1 CONTRIBUTORS
 
