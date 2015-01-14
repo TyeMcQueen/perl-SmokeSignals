@@ -44,16 +44,25 @@ sub _New {
 
 
 sub Ignite {    # Set up a new pipe.
-    my( $class, @fuel ) = @_;
-    @fuel = 1
-        if  ! @fuel;
+    my( $class, $fuel ) = @_;
+    $fuel = [ $fuel || 1 ]
+        if  ! ref $fuel;
 
-    my $bytes = length $fuel[0];
+    my $bytes = length $fuel->[0];
     my $me = $class->_New( $bytes );
 
-    $me->[_PUFFS] = 0 + @fuel;
-    for my $puff (  @fuel  ) {
-        $me->_Stoke( $puff );
+    if( 1 == @$fuel && $fuel->[0] =~ /^[1-9][0-9]*$/ ) {
+        $me->[_PUFFS] = 0 + $fuel->[0];
+        my $start = '0' x length $fuel->[0];
+        $start =~ s/0$/1/;
+        for my $puff (  "$start" .. "$fuel->[0]"  ) {
+            $me->_Stoke( $puff );
+        }
+    } else {
+        $me->[_PUFFS] = 0 + @$fuel;
+        for my $puff (  @$fuel  ) {
+            $me->_Stoke( $puff );
+        }
     }
 
     return $me;
@@ -176,16 +185,18 @@ It also happens to give out tokins in LRU order (least recently used).
 
 To use it as a semaphore / LRU:
 
-    my $bong = LightUp( 0..9 );
+    my $bong = LightUp( 12 );
     my @pool;
 
     sub sharesResource
     {
         my $dragon = $bong->Puff();
-        # Only 10 threads at once can run this code!
+        # Only 12 threads at once can run this code!
+
         my $puff = $dragon->Sniff();
-        # $puff is 0..9 and is unique among the threads here now
-        Do_exclusive_stuff_with( $pool[$puff] );
+        # $puff is '01'..'12' and is unique among the threads here now
+
+        Do_exclusive_stuff_with( $pool[$puff-1] );
         if(  ...  ) {
             $dragon->Exhale();  # Return our tokin' prematurely
             die ExpensivePostMortem();
