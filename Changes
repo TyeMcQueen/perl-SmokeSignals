@@ -4,6 +4,7 @@ Revision history for Perl extension IPC::Semaphore::SmokeSignals
   - Fix bug when using multi-byte tokins.
   - Expand documentation.
   - Add tests.
+  - Support named pipes (FIFOs).
   - Support non-blocking operations.
   - Simplify getting $N appropriate tokins.
   - Have c'tor fail if your system can't handle that much tokin'.
