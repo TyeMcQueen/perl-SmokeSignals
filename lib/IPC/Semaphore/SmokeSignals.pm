@@ -18,6 +18,7 @@ sub _SMOKE { 0 }    # End to pull from.
 sub _STOKE { 1 }    # The lit end.
 sub _BYTES { 2 }    # Tokin' length.
 sub _PUFFS { 3 }    # How many tokins; how many tokers at once.
+sub _OWNER { 4 }    # PID of process that created this pipe.
 
 
 sub LightUp {   # Set up a new pipe.
@@ -54,6 +55,15 @@ sub Ignite {    # Set up a new pipe.
     my $bytes = length $fuel->[0];
     my $me = $class->_New( $bytes );
 
+    $me->_Roll( $fuel );
+
+    return $me;
+}
+
+
+sub _Roll {     # Put the fuel in.
+    my( $me, $fuel ) = @_;
+    $me->[_OWNER] = $$;
     my $stoke = $me->[_STOKE];
     $stoke->blocking( 0 );
     if( 1 == @$fuel && $fuel->[0] =~ /^[1-9][0-9]*$/ ) {
@@ -70,8 +80,6 @@ sub Ignite {    # Set up a new pipe.
         }
     }
     $stoke->blocking( 1 );
-
-    return $me;
 }
 
 
@@ -120,8 +128,12 @@ sub _Stoke {        # Return some magic smoke (skipping proper protocol).
 }
 
 
+# Returns false if we aren't allowed to extinguish it.
+
 sub Extinguish {    # Last call!
     my( $me ) = @_;
+    return 0                    # We didn't start the fire!
+        if  $$ != ( $me->[_OWNER] || 0 );
     for my $puffs (  $me->[_PUFFS]  ) {
         while(  $puffs  ) {
             $me->_Bogart();
@@ -130,6 +142,7 @@ sub Extinguish {    # Last call!
     }
     close $me->[_STOKE];
     close $me->[_SMOKE];
+    return 1;
 }
 
 
