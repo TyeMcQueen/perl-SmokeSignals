@@ -57,4 +57,11 @@ undef $puff;
 Dies( "Exceeding your system buffer size fails", sub {
     LightUp(99999)
 }, qr/Can't stoke/ );
-Note( " $@" );
+my $err = $@;
+if( $err =~ /Can't stoke pipe \(with '([0-9]+)'\): (.*)/ ) {
+    my( $tokin, $errno ) = ( $1, $2 );
+    Note( join ' ', " Pipe capacity <", $tokin*length($tokin), '?' );
+    Note( " $errno" );
+} else {
+    Note( " Error: $@" );
+}
