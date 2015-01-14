@@ -4,7 +4,7 @@ use strict;
 use vars qw< $VERSION @EXPORT_OK >;
 BEGIN {
     $VERSION = 0.001_002;
-    @EXPORT_OK = qw< LightUp >;
+    @EXPORT_OK = qw< LightUp JoinUp >;
     require IO::Handle;
     require Exporter;
     *import = \&Exporter::import;
@@ -26,6 +26,10 @@ sub _OWNER { 4 }    # PID of process that created this pipe.
 
 sub LightUp {   # Set up a new pipe.
     return __PACKAGE__->Ignite( @_ );
+}
+
+sub JoinUp {    # Just use an existing pipe.
+    return __PACKAGE__->JoinIn( @_ );
 }
 
 
@@ -61,8 +65,17 @@ sub _New {
 }
 
 
+sub JoinIn {    # Use an already set-up pipe.
+    my( $class, $bytes, $path ) = @_;
+    my $me = $class->_New( $bytes, $path, 0 );
+    return $me;
+}
+
+
 sub Ignite {    # Set up a new pipe.
     my( $class, $fuel, $path, $perm ) = @_;
+    $perm ||= 0666
+        if  $path;
 
     ( $fuel, my $bytes ) = $class->_PickTheMix( $fuel );
 
