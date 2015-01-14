@@ -34,7 +34,7 @@ sub _New {
     binmode $smoke;
     binmode $stoke;
 
-    my $me = bless [], $class;
+    my $me = bless [], ref $class || $class;
     $me->[_SMOKE] = $smoke;
     $me->[_STOKE] = $stoke;
     $me->[_BYTES] = $bytes;
@@ -45,9 +45,9 @@ sub _New {
 
 sub Ignite {    # Set up a new pipe.
     my( $class, @fuel ) = @_;
-    $class ||= __PACKAGE__;
     @fuel = 1
         if  ! @fuel;
+
     my $bytes = length $fuel[0];
     my $me = $class->_New( $bytes );
 
