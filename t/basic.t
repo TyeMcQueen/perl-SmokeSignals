@@ -16,7 +16,7 @@ BEGIN {
     }
 }
 
-plan( tests => 12 );
+plan( tests => 13 );
 
 require IPC::Semaphore::SmokeSignals;
 my $mod = 'IPC::Semaphore::SmokeSignals';
@@ -53,6 +53,8 @@ $dragon->Exhale();
 my $puff = $pipe->Puff();
 True( $puff, 'Can re-toke after Exhale' );
 undef $puff;
+
+True( $pipe->Extinguish(), "Can extinguish" );
 
 Dies( "Exceeding your system buffer size fails", sub {
     LightUp(99999)
