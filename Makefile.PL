@@ -10,6 +10,11 @@ WriteMakefile(
     'VERSION_FROM'      => $mod,
     'PREREQ_PM'         => {
         'strict' => 0,                  # in 'core'
+        'vars' => 0,                    # in 'core'
+        'IO::Handle' => 0,              # in 'core'
+        'Exporter' => 0,                # in 'core'
+        'bytes' => 0,                   # in 'core'
+        'Carp' => 0,                    # in 'core'
     },
     $] < 5.005  ?  ()  :  (
         'AUTHOR'        => 'Tye McQueen',

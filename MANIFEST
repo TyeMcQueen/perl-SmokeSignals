@@ -2,4 +2,6 @@ Changes
 LICENSE
 MANIFEST
 Makefile.PL
+inc/TyeTest.pm
 lib/IPC/Semaphore/SmokeSignals.pm
+t/basic.t

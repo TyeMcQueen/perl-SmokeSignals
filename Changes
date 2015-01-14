@@ -1,4 +1,7 @@
 Revision history for Perl extension IPC::Semaphore::SmokeSignals
 
+0.001_002
+  - Fix bug when using multi-byte tokins.
+
 0.001_001   Long ago
   - Initial release on http://www.perlmonks.org?node=tye
