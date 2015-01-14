@@ -77,17 +77,26 @@ sub _MagicDragon {  # Every magic dragon needs a good name.
 
 
 sub Puff {          # Get a magic dragon so you won't forget to share.
-    my( $me ) = @_;
-    return $me->_MagicDragon()->_Inhale( $me );
+    my( $me, $impatient ) = @_;
+    return $me->_MagicDragon()->_Inhale( $me, $impatient );
 }
 
 
 sub _Bogart {       # Take a drag (skipping proper protocol).
-    my( $me ) = @_;
+    my( $me, $impatient ) = @_;
     my( $smoke ) = $me->[_SMOKE];
+    $smoke->blocking( 0 )
+        if  $impatient;
     my $puff;
-    sysread( $smoke, $puff, $me->[_BYTES] )
-        or  die "Can't toke pipe: $!\n";
+    my $got_none = ! sysread( $smoke, $puff, $me->[_BYTES] );
+    my $excuse = $!;
+    $smoke->blocking( 1 )
+        if  $impatient;
+    return undef
+        if  $impatient
+        &&  $got_none;
+    die "Can't toke pipe: $!\n"
+        if  $got_none;
     return $puff;
 }
 
@@ -129,8 +138,9 @@ package IPC::Semaphore::SmokeSignals::Puff;
 push @CARP_NOT, __PACKAGE__;
 
 sub _Inhale {
-    my( $class, $pipe ) = @_;
-    my $puff = $pipe->_Bogart();
+    my( $class, $pipe, $impatient ) = @_;
+    my $puff = $pipe->_Bogart($impatient)
+        or  return undef;
     return bless [ $pipe, $puff ], $class;
 }
 
