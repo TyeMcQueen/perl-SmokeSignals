@@ -180,7 +180,7 @@ sub Puff {          # Get a magic dragon so you won't forget to share.
 
 
 sub _Bogart {       # Take a drag (skipping proper protocol).
-    my( $me, $impatient ) = @_;
+    my( $me, $impatient, $nil ) = @_;
     my( $smoke ) = $me->[_SMOKE];
     $smoke->blocking( 0 )
         if  $impatient;
@@ -197,7 +197,7 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
     ;
     _croak( "Can't toke pipe: $!\n" )
         if  $got_none;
-    if( $puff !~ /[^\0]/ ) {
+    if( ! $nil && $puff !~ /[^\0]/ ) {
         $me->_Stoke( $puff );
         $me->[_PUFFS] //= 0;    # Mark pipe as somebody else is putting it out.
         return
