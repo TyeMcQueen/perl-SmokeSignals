@@ -21,7 +21,7 @@ use Fcntl   qw<
 sub _SMOKE { 0 }    # End to pull from.
 sub _STOKE { 1 }    # The lit end.
 sub _BYTES { 2 }    # Tokin' length.
-sub _PUFFS { 3 }    # How many tokins; how many tokers at once.
+sub _PUFFS { 3 }    # How many tokins; how many tokers at once (if I lit it).
 sub _OWNER { 4 }    # PID of process that created this pipe.
 
 
@@ -155,6 +155,8 @@ sub _Roll {     # Put the fuel in.
         $me->[_PUFFS] = 0 + @$fuel;
         for my $puff (  @$fuel  ) {
             $me->_Stoke( $puff );
+            _croak( "You can't use a string of null bytes as a tokin'" )
+                if  $puff !~ /[^\0]/;
         }
     }
     $stoke->blocking( 1 );
@@ -168,6 +170,9 @@ sub _MagicDragon {  # Every magic dragon needs a good name.
 
 sub Puff {          # Get a magic dragon so you won't forget to share.
     my( $me, $impatient ) = @_;
+    if( defined $me->[_PUFFS] && $me->[_PUFFS] <= 0 ) {
+        _croak( "The pipe is going out.\n" );
+    }
     return $me->_MagicDragon()->_Inhale( $me, $impatient );
 }
 
@@ -190,6 +195,11 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
     ;
     _croak( "Can't toke pipe: $!\n" )
         if  $got_none;
+    if( $puff !~ /[^\0]/ ) {
+        $me->_Stoke( $puff );
+        $me->[_PUFFS] //= 0;    # Mark pipe as somebody else is putting it out.
+        _croak( "The pipe is going out.\n" );
+    }
     return $puff;
 }
 
@@ -507,6 +517,11 @@ For example:
         }
     }
 
+If the initializer of the pipe has called C<Extinguish()> on the pipe, then
+any calls to C<Puff()> (in any process) can die with the message:
+
+    "The pipe is going out.\n"
+
 =head2 Sniff
 
     my $tokin = $dragon->Sniff();
@@ -537,7 +552,16 @@ but only if C<$dragon> is the last/only existing copy of the dragon.
     my $leftovers = $pipe->Extinguish( 'impatient' );
 
 C<Extinguish()> marks the pipe as being shut down and starts pulling out and
-discarding all of the tokins in it.
+discarding all of the tokins in it.  But it is a no-op (and returns C<undef>)
+if the caller was not the process that lit the pipe.
+
+If you pass it a true value, then it will still remove tokins from the pipe as
+fast as possible, but it will not hang waiting for any outstanding tokin' to
+be returned to the pipe.  In such a case, the number of outstanding tokins is
+returned.
+
+In all cases, 0 is returned if the call managed to completely shut down the
+pipe (always the case if no true value was passed in).
 
 =head1 NAMED PIPES
 
