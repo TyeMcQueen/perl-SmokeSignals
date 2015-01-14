@@ -359,7 +359,8 @@ To use an un-named pipe (such as if you are about to spawn some children):
 This has the advantages of requiring no clean-up and having no chance of
 colliding identifiers (unlike with SysV semaphores).
 
-You can also use a named pipe (FIFO):
+It is often better to use C<MeetUp()> if using a named pipe (FIFO), but it
+is possible to use a named pipe via:
 
     my $pipe = LightUp( 8, "/var/run/my-app.pipe" );
     # same as:
@@ -535,6 +536,36 @@ but only if C<$dragon> is the last/only existing copy of the dragon.
 
 C<Extinguish()> marks the pipe as being shut down and starts pulling out and
 discarding all of the tokins in it.
+
+=head1 NAMED PIPES
+
+If you need a semaphore (or LRU) between unrelated processes or just
+processes where it is inconvenient to create the SmokeSignals object in
+their parent process, then you can use a named pipe (a FIFO):
+
+    use IPC::Semaphore::SmokeSignals qw< MeetUp >;
+
+    my $pipe = MeetUp( 12, "/var/run/mp-app" );
+
+Please don't add code to delete the FIFO when you think you are done with it.
+That can just lead to races in initialization.
+
+Or, if you want to designate one process as being responsible for setting up
+the paraphernalia:
+
+    use IPC::Semaphore::SmokeSignals qw< LightUp JoinUp >;
+
+    my $path = "/var/run/my-app.pipe";
+    my $pipe =
+        $is_owner
+            ? LightUp( 12, $path, 0666 )
+            : JoinUp( length('12'), $path );
+
+In this case, calls to JoinUp() will block, waiting for the owner to at least
+put the pipe in place (but not waiting until the pipe is fully lit).  Note
+that this can thwart our checking to make sure that the total size of all of
+the tokins does not exceed your pipe's capacity (which could later lead to
+deadlock).
 
 =head1 PLANS
 
