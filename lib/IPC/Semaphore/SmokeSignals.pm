@@ -47,12 +47,9 @@ sub _New {
 
 sub Ignite {    # Set up a new pipe.
     my( $class, $fuel ) = @_;
-    $fuel = [ $fuel || 1 ]
-        if  ! ref $fuel;
-    @$fuel = 1
-        if  ! @$fuel;
 
-    my $bytes = length $fuel->[0];
+    ( $fuel, my $bytes ) = $class->_PickTheMix( $fuel );
+
     my $me = $class->_New( $bytes );
 
     $me->_Roll( $fuel );
@@ -61,16 +58,34 @@ sub Ignite {    # Set up a new pipe.
 }
 
 
+sub _PickTheMix {
+    my( $class, $fuel ) = @_;
+    $fuel ||= 1;
+    my $bytes;
+    if( ref $fuel ) {
+        _croak( "You brought nothing to smoke!\n" )
+            if  ! @$fuel;
+        $bytes = length $fuel->[0];
+    } else {
+        _croak( "Specify what to smoke or how much, not '$fuel'.\n" )
+            if  $fuel !~ /^[1-9][0-9]*$/;
+        $bytes = length $fuel;
+    }
+    return( $fuel, $bytes );
+}
+
+
 sub _Roll {     # Put the fuel in.
     my( $me, $fuel ) = @_;
     $me->[_OWNER] = $$;
+
     my $stoke = $me->[_STOKE];
     $stoke->blocking( 0 );
-    if( 1 == @$fuel && $fuel->[0] =~ /^[1-9][0-9]*$/ ) {
-        $me->[_PUFFS] = 0 + $fuel->[0];
-        my $start = '0' x length $fuel->[0];
+    if( ! ref $fuel ) {
+        $me->[_PUFFS] = 0 + $fuel;
+        my $start = '0' x length $fuel;
         $start =~ s/0$/1/;
-        for my $puff (  "$start" .. "$fuel->[0]"  ) {
+        for my $puff (  "$start" .. "$fuel"  ) {
             $me->_Stoke( $puff );
         }
     } else {
