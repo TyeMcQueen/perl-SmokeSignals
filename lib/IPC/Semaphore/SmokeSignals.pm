@@ -128,21 +128,31 @@ sub _Stoke {        # Return some magic smoke (skipping proper protocol).
 }
 
 
-# Returns false if we aren't allowed to extinguish it.
+# Returns undef if we aren't allowed to extinguish it.
+# Returns 0 if pipe is now completely extinguished.
+# Otherwise, returns number of outstanding tokins remaining.
 
 sub Extinguish {    # Last call!
-    my( $me ) = @_;
-    return 0                    # We didn't start the fire!
+    my( $me, $impatient ) = @_;
+    return undef                # We didn't start the fire!
         if  $$ != ( $me->[_OWNER] || 0 );
+    return $me->[_PUFFS]        # We didn't or we already put it out.
+        if  ! $me->[_PUFFS];
+    if( 0 < $me->[_PUFFS] ) {   # Our first try at shutting down.
+        $me->[_PUFFS] *= -1;    # Mark that we started shutting down.
+    }
     for my $puffs (  $me->[_PUFFS]  ) {
         while(  $puffs  ) {
-            $me->_Bogart();
-            --$puffs;
+            my $puff = $me->_Bogart( $impatient );
+            if( ! defined $puff ) {     # Pipe empty:
+                return -$puffs;         # Tell caller: somebody needs time.
+            }
+            ++$puffs;   # Modifies $me->[_PUFFS].
         }
     }
     close $me->[_STOKE];
     close $me->[_SMOKE];
-    return 1;
+    return 0;
 }
 
 
