@@ -74,7 +74,7 @@ sub _Stoke {        # Return some magic smoke (skipping proper protocol).
     my $stoke = $me->[_STOKE];
     my $bytes = $me->[_BYTES];
     if(  $bytes != length $puff  ) {
-        _croak( "Tokin ($puff) is ", length($puff), " bytes, not $bytes!" );
+        _croak( "Tokin' ($puff) is ", length($puff), " bytes, not $bytes!" );
     }
     syswrite( $stoke, $puff )
         or  die "Can't stoke pipe: $!\n";
@@ -144,6 +144,7 @@ IPC::Semaphore::SmokeSignals - A mutex and an LRU from crack pipe technology
     {
         my $puff = $pipe->Puff();
         # Only one thread will run this code at a time!
+        ...
     }
 
 =head1 DESCRIPTION
@@ -155,7 +156,7 @@ with a simple pipe.
 It is easiest to use as a very simple mutex (see Synopsis above).
 
 You can also use this as a semaphore on a relatively small number of relatively
-small tokins (each tokin must be the same number of bytes and the total
+small tokins (each tokin' must be the same number of bytes and the total
 number of bytes should be less than your system buffer size or else things
 will hang).
 
@@ -174,12 +175,12 @@ To use it as a semaphore / LRU:
         # $puff is 0..9 and is unique among the threads here now
         Do_exclusive_stuff_with( $pool[$puff] );
         if(  ...  ) {
-            $dragon->Exhale();  # Return our tokin prematurely
+            $dragon->Exhale();  # Return our tokin' prematurely
             die ExpensivePostMortem();
         }
     }
 
-    sub stowParaphenalia
+    sub stowParaphernalia
     {
         # Calling all magic dragons; waiting for them to exhale:
         $bong->Extinguish();
