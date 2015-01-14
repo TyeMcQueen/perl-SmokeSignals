@@ -1,0 +1,5 @@
+Changes
+LICENSE
+MANIFEST
+Makefile.PL
+lib/IPC/Semaphore/SmokeSignals.pm
