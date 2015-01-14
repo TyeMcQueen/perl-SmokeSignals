@@ -1,4 +1,4 @@
-package Semaphore::SmokeSignals;
+package IPC::Semaphore::SmokeSignals;
 use strict;
 use vars qw( $VERSION @EXPORT_OK );
 BEGIN {
@@ -106,7 +106,7 @@ sub _croak
 }
 
 
-package Semaphore::SmokeSignals::Puff;
+package IPC::Semaphore::SmokeSignals::Puff;
 
 sub Inhale
 {
@@ -142,11 +142,11 @@ __END__
 
 =head1 NAME
 
-Semaphore::SmokeSignals - A mutex and an LRU from crack pipe technology
+IPC::Semaphore::SmokeSignals - A mutex and an LRU from crack pipe technology
 
 =head1 SYNOPSIS
 
-    use Semaphore::SmokeSignals qw( LightUp );
+    use IPC::Semaphore::SmokeSignals qw( LightUp );
 
     BEGIN {
         my $pipe= LightUp();
