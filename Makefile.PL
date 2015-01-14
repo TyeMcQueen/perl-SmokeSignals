@@ -16,11 +16,12 @@ WriteMakefile(
         'bytes' => 0,                   # in 'core'
         'Errno' => 0,                   # in 'core'
         'Fcntl' => 0,                   # in 'core'
-        'POSIX' => 0,                   # in 'core'
-        'Carp' => 0,                    # in 'core'
         # Testing only:
         'File::Basename' => 0,          # in 'core'
         'lib' => 0,                     # in 'core'
+        # Only used when needed:
+        'POSIX' => 0,                   # in 'core'
+        'Carp' => 0,                    # in 'core'
     },
     $] < 5.005  ?  ()  :  (
         'AUTHOR'        => 'Tye McQueen',
