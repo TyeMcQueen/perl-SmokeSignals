@@ -54,6 +54,8 @@ sub Ignite {    # Set up a new pipe.
     my $bytes = length $fuel->[0];
     my $me = $class->_New( $bytes );
 
+    my $stoke = $me->[_STOKE];
+    $stoke->blocking( 0 );
     if( 1 == @$fuel && $fuel->[0] =~ /^[1-9][0-9]*$/ ) {
         $me->[_PUFFS] = 0 + $fuel->[0];
         my $start = '0' x length $fuel->[0];
@@ -67,6 +69,7 @@ sub Ignite {    # Set up a new pipe.
             $me->_Stoke( $puff );
         }
     }
+    $stoke->blocking( 1 );
 
     return $me;
 }
