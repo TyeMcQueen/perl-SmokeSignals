@@ -137,14 +137,12 @@ IPC::Semaphore::SmokeSignals - A mutex and an LRU from crack pipe technology
 
     use IPC::Semaphore::SmokeSignals qw< LightUp >;
 
-    BEGIN {
-        my $pipe = LightUp();
+    my $pipe = LightUp();
 
-        sub threadSafe
-        {
-            my $puff = $pipe->Puff();
-            # Only one thread will run this code at a time!
-        }
+    sub threadSafe
+    {
+        my $puff = $pipe->Puff();
+        # Only one thread will run this code at a time!
     }
 
 =head1 DESCRIPTION
@@ -164,31 +162,29 @@ It also happens to give out tokins in LRU order (least recently used).
 
 To use it as a semaphore / LRU:
 
-    BEGIN {
-        my $bong = LightUp( 0..9 );
-        my @pool;
+    my $bong = LightUp( 0..9 );
+    my @pool;
 
-        sub sharesResource
-        {
-            my $dragon = $bong->Puff();
-            # Only 10 threads at once can run this code!
-            my $puff = $dragon->Sniff();
-            # $puff is 0..9 and is unique among the threads here now
-            Do_exclusive_stuff_with( $pool[$puff] );
-            if(  ...  ) {
-                $dragon->Exhale();  # Return our tokin prematurely
-                die ExpensivePostMortem();
-            }
+    sub sharesResource
+    {
+        my $dragon = $bong->Puff();
+        # Only 10 threads at once can run this code!
+        my $puff = $dragon->Sniff();
+        # $puff is 0..9 and is unique among the threads here now
+        Do_exclusive_stuff_with( $pool[$puff] );
+        if(  ...  ) {
+            $dragon->Exhale();  # Return our tokin prematurely
+            die ExpensivePostMortem();
         }
-
-        sub stowParaphenalia
-        {
-            # Calling all magic dragons; waiting for them to exhale:
-            $bong->Extinguish();
-            ...
-        }
-
     }
+
+    sub stowParaphenalia
+    {
+        # Calling all magic dragons; waiting for them to exhale:
+        $bong->Extinguish();
+        ...
+    }
+
 
 =head1 PLANS
 
