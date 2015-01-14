@@ -39,7 +39,7 @@ sub MeetUp {    # When you are not sure who should light the pipe.
 
 
 sub _New {
-    my( $class, $bytes, $path, $perm ) = @_;
+    my( $class, $bytes, $path, $perm, $nowait ) = @_;
 
     my $smoke = IO::Handle->new();
     my $stoke = IO::Handle->new();
@@ -53,9 +53,11 @@ sub _New {
             mkfifo( $path, $perm )
                 or  _croak( "Can't create FIFO ($path): $!\n" );
         }
-        my $extra = $perm ? O_NONBLOCK() : 0;
+        my $extra = $perm || $nowait ? O_NONBLOCK() : 0;
         sysopen $smoke, $path, O_RDONLY()|$extra, $perm
             or  _croak( "Can't read pipe path ($path): $!\n" );
+        _croak( "Path ($path) is not a FIFO (named pipe)\n" )
+            if  ! -p $smoke;
         sysopen $stoke, $path, O_WRONLY()
             or  _croak( "Can't write pipe path ($path): $!\n" );
     }
@@ -115,7 +117,7 @@ sub Meet {      # When you are not sure who should light the pipe.
 
     ( $fuel, my $bytes ) = $class->_PickTheMix( $fuel );
 
-    my $me = $class->_New( $bytes, $path, $perm );
+    my $me = $class->_New( $bytes, $path, $perm, 'nowait' );
 
     # See if somebody already lit the pipe:
     if( flock( $me->[_SMOKE], LOCK_EX() | LOCK_NB() ) ) {
