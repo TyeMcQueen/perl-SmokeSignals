@@ -12,10 +12,11 @@ BEGIN {
         bytes->import();
     }
 }
-sub _smoke { 0 }
-sub _stoke { 1 }
-sub _bytes { 2 }
-sub _puffs { 3 }
+
+sub _SMOKE { 0 }    # End to pull from.
+sub _STOKE { 1 }    # The lit end.
+sub _BYTES { 2 }    # Tokin' length.
+sub _PUFFS { 3 }    # How many tokins; how many tokers at once.
 
 
 sub LightUp {   # Set up a new pipe.
@@ -36,10 +37,10 @@ sub Ignite {    # Set up a new pipe.
     binmode $smoke;
     binmode $stoke;
     my $me = bless [], $class;
-    $me->[_smoke] = $smoke;
-    $me->[_stoke] = $stoke;
-    $me->[_bytes] = $bytes;
-    $me->[_puffs] = 0 + @fuel;
+    $me->[_SMOKE] = $smoke;
+    $me->[_STOKE] = $stoke;
+    $me->[_BYTES] = $bytes;
+    $me->[_PUFFS] = 0 + @fuel;
     for my $puff (  @fuel  ) {
         $me->_Stoke( $puff );
     }
@@ -60,9 +61,9 @@ sub Puff {          # Get a magic dragon so you won't forget to share.
 
 sub _Bogart {       # Take a drag (skipping proper protocol).
     my( $me ) = @_;
-    my( $smoke ) = $me->[_smoke];
+    my( $smoke ) = $me->[_SMOKE];
     my $puff;
-    sysread( $smoke, $puff, $me->[_bytes] )
+    sysread( $smoke, $puff, $me->[_BYTES] )
         or  die "Can't toke pipe: $!\n";
     return $puff;
 }
@@ -70,8 +71,8 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
 
 sub _Stoke {        # Return some magic smoke (skipping proper protocol).
     my( $me, $puff ) = @_;
-    my $stoke = $me->[_stoke];
-    my $bytes = $me->[_bytes];
+    my $stoke = $me->[_STOKE];
+    my $bytes = $me->[_BYTES];
     if(  $bytes != length $puff  ) {
         _croak( "Tokin ($puff) is ", length($puff), " bytes, not $bytes!" );
     }
@@ -82,14 +83,14 @@ sub _Stoke {        # Return some magic smoke (skipping proper protocol).
 
 sub Extinguish {    # Last call!
     my( $me ) = @_;
-    for my $puffs (  $me->[_puffs]  ) {
+    for my $puffs (  $me->[_PUFFS]  ) {
         while(  $puffs  ) {
             $me->_Bogart();
             --$puffs;
         }
     }
-    close $me->[_stoke];
-    close $me->[_smoke];
+    close $me->[_STOKE];
+    close $me->[_SMOKE];
 }
 
 
