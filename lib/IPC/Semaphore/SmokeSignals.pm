@@ -47,6 +47,8 @@ sub Ignite {    # Set up a new pipe.
     my( $class, $fuel ) = @_;
     $fuel = [ $fuel || 1 ]
         if  ! ref $fuel;
+    @$fuel = 1
+        if  ! @$fuel;
 
     my $bytes = length $fuel->[0];
     my $me = $class->_New( $bytes );
