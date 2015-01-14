@@ -78,7 +78,7 @@ sub _MagicDragon {  # Every magic dragon needs a good name.
 
 sub Puff {          # Get a magic dragon so you won't forget to share.
     my( $me ) = @_;
-    return $me->_MagicDragon()->Inhale( $me );
+    return $me->_MagicDragon()->_Inhale( $me );
 }
 
 
@@ -123,9 +123,12 @@ sub _croak {
 }
 
 
-package IPC::Semaphore::SmokeSignals::Puff;
+our @CARP_NOT;
 
-sub Inhale {
+package IPC::Semaphore::SmokeSignals::Puff;
+push @CARP_NOT, __PACKAGE__;
+
+sub _Inhale {
     my( $class, $pipe ) = @_;
     my $puff = $pipe->_Bogart();
     return bless [ $pipe, $puff ], $class;
