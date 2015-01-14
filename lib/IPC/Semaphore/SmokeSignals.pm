@@ -4,7 +4,7 @@ use strict;
 use vars qw< $VERSION @EXPORT_OK >;
 BEGIN {
     $VERSION = 0.001_002;
-    @EXPORT_OK = qw< LightUp JoinUp >;
+    @EXPORT_OK = qw< LightUp JoinUp MeetUp >;
     require IO::Handle;
     require Exporter;
     *import = \&Exporter::import;
@@ -15,6 +15,7 @@ BEGIN {
 use Errno   qw< EAGAIN EWOULDBLOCK >;
 use Fcntl   qw<
     O_WRONLY    O_RDONLY    O_NONBLOCK
+    LOCK_EX     LOCK_NB     LOCK_UN
 >;
 
 sub _SMOKE { 0 }    # End to pull from.
@@ -30,6 +31,10 @@ sub LightUp {   # Set up a new pipe.
 
 sub JoinUp {    # Just use an existing pipe.
     return __PACKAGE__->JoinIn( @_ );
+}
+
+sub MeetUp {    # When you are not sure who should light the pipe.
+    return __PACKAGE__->Meet( @_ );
 }
 
 
@@ -102,6 +107,30 @@ sub _PickTheMix {
         $bytes = length $fuel;
     }
     return( $fuel, $bytes );
+}
+
+
+sub Meet {      # When you are not sure who should light the pipe.
+    my( $class, $fuel, $path, $perm ) = @_;
+
+    ( $fuel, my $bytes ) = $class->_PickTheMix( $fuel );
+
+    my $me = $class->_New( $bytes, $path, $perm );
+
+    # See if somebody already lit the pipe:
+    if( flock( $me->[_SMOKE], LOCK_EX() | LOCK_NB() ) ) {
+        my $puff = $me->_Bogart('impatient');
+        if( defined $puff ) {
+            # Already lit, so return the magic smoke:
+            $me->_Stoke( $puff );
+        } else {
+            # I got here first!  Light it up!
+            $me->_Roll( $fuel );
+        }
+        flock( $me->[_SMOKE], LOCK_UN() );
+    }
+
+    return $me;
 }
 
 
@@ -302,7 +331,7 @@ To use it as a semaphore / LRU:
 
 =head1 EXPORTS
 
-There are 2 functions that you can request to be exported into your package.
+There are 3 functions that you can request to be exported into your package.
 They serve to prevent you from having to type the rather long module name
 (IPC::Semaphore::SmokeSignals) more than once.
 
@@ -368,6 +397,11 @@ The third argument, C<$perm>, if given, overrides the default permissions
 (0666) to use if a new FIFO is created.  Your umask will be applied (by the
 OS) to get the permissions actually used.
 
+Having a second process C<LightUp()> the same C<$path> after another process
+has lit it up and while any process is still using it leads to problems.  The
+module does not protect you from making that mistake.  This is why it is
+usually better to use C<MeetUp()> when wanting to use a FIFO.
+
 =head2 JoinUp
 
 C<JoinUp()> connects to an existing named pipe (FIFO):
@@ -381,10 +415,34 @@ C<JoinUp(...)> is just short for:
     IPC::Semaphore::SmokeSignals->JoinIn(...);
 
 The C<$bytes> argument must be the number of bytes of each tokin' used when
-the FIFO was created by LightUp().
+the FIFO was created [by LightUp() or by MeetUp()].
 
 The FIFO must already exist (at C<$path>).  The call to C<JoinUp()> can
 block waiting for the creator to connect to the FIFO.
+
+=head2 MeetUp
+
+C<MeetUp()> coordinates several unrelated processes connecting to (and maybe
+creating) a named pipe (FIFO), ensuring that only one of them initializes it.
+
+    use IPC::Semaphore::SmokeSignals 'MeetUp';
+
+    $pipe = MeetUp( $fuel, $path, $perm );
+
+C<MeetUp(...)> is just short for:
+
+    IPC::Semaphore::SmokeSignals->Meet(...);
+
+The C<$fuel> and C<$path> arguments are identical to those same arguments for
+C<LightUp()>.
+
+It is often best to omit the C<$perm> argument (or pass in a false value),
+which will cause C<MeetUp()> to fail if the FIFO, C<$path>, does not yet
+exist.  This is because deleting the FIFO makes it possible for there to be
+a race during initialization.
+
+If you pass in a true value for C<$perm>, likely C<0666>, then the FIFO will
+be created if needed.
 
 =head1 METHODS
 
@@ -399,6 +457,12 @@ See L<LightUp>.
     my $pipe = IPC::Semaphore::SmokeSignals->JoinIn( $bytes, $path );
 
 See L<JoinUp>.
+
+=head2 Meet
+
+    my $pipe = IPC::Semaphore::SmokeSignals->Meet( $fuel, $path, $perm );
+
+See L<MeetUp>.
 
 =head2 Puff
 
