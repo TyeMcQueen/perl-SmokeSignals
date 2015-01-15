@@ -199,7 +199,7 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
         if  $got_none;
     if( ! $nil && $puff !~ /[^\0]/ ) {
         $me->_Stoke( $puff );
-        $me->[_PUFFS] //= 0;    # Mark pipe as somebody else is putting it out.
+        $me->_Snuff();          # Mark pipe as somebody else is putting it out.
         return
             if  wantarray;
         _croak( "The pipe is going out.\n" );
@@ -230,6 +230,27 @@ sub Extinguish {    # Last call!
         if  $$ != ( $me->[_OWNER] || 0 );
     return $me->[_PUFFS]        # We didn't or we already put it out.
         if  ! $me->[_PUFFS];
+
+    my $left = $me->_Smother( $impatient );
+    return $left
+        if  $left;
+
+    $me->_Snuff();
+    return 0;
+}
+
+
+sub _Snuff {
+    my( $me ) = @_;
+    $me->[_PUFFS] = 0;
+    close $me->[_STOKE];
+    close $me->[_SMOKE];
+}
+
+
+sub _Smother {
+    my( $me, $impatient ) = @_;
+
     if( 0 < $me->[_PUFFS] ) {   # Our first try at shutting down.
         $me->_Stoke( "\0" x $me->[_BYTES] );    # Send an EOP tokin'.
         $me->[_PUFFS] *= -1;    # Mark that we started shutting down.
@@ -258,8 +279,6 @@ sub Extinguish {    # Last call!
             }
         }
     }
-    close $me->[_STOKE];
-    close $me->[_SMOKE];
     return 0;
 }
 
