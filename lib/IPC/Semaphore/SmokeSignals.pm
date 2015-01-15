@@ -170,7 +170,7 @@ sub _MagicDragon {  # Every magic dragon needs a good name.
 
 sub Puff {          # Get a magic dragon so you won't forget to share.
     my( $me, $impatient ) = @_;
-    if( defined $me->[_PUFFS] && $me->[_PUFFS] <= 0 ) {
+    if( ref $me->[_PUFFS] ) {
         return
             if  wantarray;
         _croak( "The pipe is going out.\n" );
@@ -226,10 +226,13 @@ sub _Stoke {        # Return some magic smoke (skipping proper protocol).
 
 sub Extinguish {    # Last call!
     my( $me, $impatient ) = @_;
+    my $puffs = $me->[_PUFFS];
+
     return undef                # We didn't start the fire!
-        if  $$ != ( $me->[_OWNER] || 0 );
-    return $me->[_PUFFS]        # We didn't or we already put it out.
-        if  ! $me->[_PUFFS];
+        if  $$ != ( $me->[_OWNER] || 0 )
+        ||  ! defined $puffs;
+    return 0                    # We already put it out.
+        if  ref $puffs && ! @$puffs;
 
     my $left = $me->_Smother( $impatient );
     return $left
@@ -242,7 +245,7 @@ sub Extinguish {    # Last call!
 
 sub _Snuff {
     my( $me ) = @_;
-    $me->[_PUFFS] = 0;
+    $me->[_PUFFS] = [];
     close $me->[_STOKE];
     close $me->[_SMOKE];
 }
@@ -250,13 +253,14 @@ sub _Snuff {
 
 sub _Smother {
     my( $me, $impatient ) = @_;
+    my $puffs = $me->[_PUFFS];
 
-    if( 0 < $me->[_PUFFS] ) {   # Our first try at shutting down.
+    if( ! ref $puffs ) {        # Our first try at shutting down.
         $me->_Stoke( "\0" x $me->[_BYTES] );    # Send an EOP tokin'.
-        $me->[_PUFFS] *= -1;    # Mark that we started shutting down.
+    } else {
+        ( $puffs ) = @$puffs;
     }
     my $eop;                    # Are we holding on to the EOP tokin'?
-    for my $puffs (  $me->[_PUFFS]  ) {
         while( 1 ) {
             my $puff = $me->_Bogart( $impatient, 'nil' );
             if( ! defined $puff ) {     # Pipe empty:
@@ -264,21 +268,21 @@ sub _Smother {
                     if  ! $puffs && $eop;   # (We even drained the EOP.)
                 $me->_Stoke( $eop )     # Keep others shutting down.
                     if  $eop;
-                return -$puffs + ($eop?0:1);    # Report: others need time.
+                $me->[_PUFFS] = [$puffs];
+                return $puffs + ($eop?0:1);    # Report: others need time.
             }
             if( $puff =~ /[^\0]/ ) {    # We eliminated another non-EOP tokin':
-                ++$puffs;   # Modifies $me->[_PUFFS].
+                --$puffs;
                 if( $puffs && $eop ) {  # Others reading and no EOP in pipe:
                     $me->_Stoke( $eop );    # Put the EOP back.
                     $eop = '';
                 }
-            } elsif( ! $puffs ) {       # Got the EOP and were no tokins left:
-                last;                   # All puffed out!
             } else {                    # Got EOP, some tokins still out:
                 $eop = $puff;           # Note we may need to put the EOP back.
             }
+            last                        # All puffed out!
+                if  ! $puffs && $eop;
         }
-    }
     return 0;
 }
 
