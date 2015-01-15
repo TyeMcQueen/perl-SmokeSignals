@@ -26,6 +26,10 @@ sub async {
     die "Can't exec: $!\n";
 }
 
+if( $^O =~ /MSWin/ ) {
+    print "1..0 # SKIP no mkfifo on Windows\n";
+    exit 0;
+}
 plan( tests => 7 );
 
 my $mod = 'IPC::Semaphore::SmokeSignals';

@@ -8,6 +8,7 @@ Revision history for Perl extension IPC::Semaphore::SmokeSignals
   - Support non-blocking operations.
   - Simplify getting $N appropriate tokins.
   - Have c'tor fail if your system can't handle that much tokin'.
+  - Tested minimal functionality on Windows.
 
 0.001_001   Long ago
   - Initial release on http://www.perlmonks.org?node=tye

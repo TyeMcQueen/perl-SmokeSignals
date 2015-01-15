@@ -53,32 +53,50 @@ True( $pipe, 'Can create a pipe' );
 my $dragon = $pipe->Puff();
 True( $dragon, 'Can toke' );
 
-False( $pipe->Puff(1), 'Impatience fails' );
+my $isWin = $^O =~ /MSWin/ ? 'blocking(0) is a no-op on Windows' : '';
+if( $isWin ) {
+    skip( $isWin );
+} else {
+    False( $pipe->Puff(1), 'Impatience fails' );
+}
 
 undef $dragon;
 $dragon = $pipe->Puff();
 True( $dragon, 'Can re-toke' );
 
-False( $pipe->Puff(1), 'Impatience re-fails' );
+if( $isWin ) {
+    skip( $isWin );
+} else {
+    False( $pipe->Puff(1), 'Impatience re-fails' );
+}
 
 $dragon->Exhale();
 my $puff = $pipe->Puff();
 True( $puff, 'Can re-toke after Exhale' );
 
-True( $pipe->Extinguish(1), "Can't extinguish early" );
+if( $isWin ) {
+    skip( $isWin );
+} else {
+    True( $pipe->Extinguish(1), "Can't extinguish early" );
+}
 
 undef $puff;
 
 False( $pipe->Extinguish(), "Can extinguish" );
 
-Dies( "Exceeding your system buffer size fails", sub {
-    LightUp(99999)
-}, qr/Can't stoke/ );
-my $err = $@;
-if( $err =~ /Can't stoke pipe \(with '([0-9]+)'\): (.*)/ ) {
-    my( $tokin, $errno ) = ( $1, $2 );
-    Note( join ' ', " Pipe capacity <", $tokin*length($tokin), '?' );
-    Note( " $errno" );
+if( $isWin ) {
+    skip( $isWin )
+        for 1..2;
 } else {
-    Note( " Error: $@" );
+    Dies( "Exceeding your system buffer size fails", sub {
+        LightUp(99999)
+    }, qr/Can't stoke/ );
+    my $err = $@;
+    if( $err =~ /Can't stoke pipe \(with '([0-9]+)'\): (.*)/ ) {
+        my( $tokin, $errno ) = ( $1, $2 );
+        Note( join ' ', " Pipe capacity <", $tokin*length($tokin), '?' );
+        Note( " $errno" );
+    } else {
+        Note( " Error: $@" );
+    }
 }

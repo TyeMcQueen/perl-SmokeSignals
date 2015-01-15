@@ -20,6 +20,8 @@ use IPC::Semaphore::SmokeSignals qw< LightUp >;
 
 plan( tests => 1 );
 
+my $isWin = $^O =~ /MSWin/ ? 'blocking(0) is a no-op on Windows' : '';
+
 # Make this test die if it ever hangs:
 alarm( 10 );
 
@@ -29,6 +31,8 @@ my $pipe = LightUp(['a'..'z']);
 
 my @bet;
 while( 1 ) {
+    last
+        if  $isWin && 25 < @bet;
     my $d = $pipe->Puff(1) or last;
     push @bet, $d;
 }
