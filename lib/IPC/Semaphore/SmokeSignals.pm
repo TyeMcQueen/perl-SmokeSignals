@@ -3,7 +3,7 @@ use strict;
 
 use vars qw< $VERSION @EXPORT_OK >;
 BEGIN {
-    $VERSION = 0.001_002;
+    $VERSION = 0.001_003;
     @EXPORT_OK = qw< LightUp JoinUp MeetUp >;
     require IO::Handle;
     require Exporter;
