@@ -12,8 +12,8 @@ BEGIN {
         bytes->import();
     }
 }
-use Errno   qw< EAGAIN EWOULDBLOCK >;
-use Fcntl   qw<
+use Errno       qw< EAGAIN EWOULDBLOCK >;
+use Fcntl       qw<
     O_WRONLY    O_RDONLY    O_NONBLOCK
     LOCK_EX     LOCK_NB     LOCK_UN
 >;
@@ -197,9 +197,9 @@ sub _Bogart {       # Take a drag (skipping proper protocol).
     ;
     _croak( "Can't toke pipe: $!\n" )
         if  $got_none;
-    if( ! $nil && $puff !~ /[^\0]/ ) {
+    if( ! $nil && $puff !~ /[^\0]/ ) {  # Pipe is being smothered.
         $me->_Stoke( $puff );
-        $me->_Snuff();          # Mark pipe as somebody else is putting it out.
+        $me->_Snuff();                  # Stop us from using it.
         return
             if  wantarray;
         _croak( "The pipe is going out.\n" );
@@ -228,24 +228,32 @@ sub Extinguish {    # Last call!
     my( $me, $impatient ) = @_;
     my $puffs = $me->[_PUFFS];
 
-    return undef                # We didn't start the fire!
-        if  $$ != ( $me->[_OWNER] || 0 )
-        ||  ! defined $puffs;
-    return 0                    # We already put it out.
+    my $left = undef;           # Returned if we didn't start the fire.
+    $left = 0                   # Returned when it is all the way out...
+        if  defined $puffs      # ...since we did start the fire.
+        &&  $$ == ( $me->[_OWNER] || 0 );
+
+    return $left                # We already put out at least ours.
         if  ref $puffs && ! @$puffs;
 
-    my $left = $me->_Smother( $impatient );
-    return $left
-        if  $left;
-
+    if( defined $left ) {       # We brought it up so we can take it down:
+        $left = $me->_Smother( $impatient );
+        return $left            # Not all the way out yet.
+            if  $left;
+    }
+    # Either all the way out or just extinguishing our access to it:
     $me->_Snuff();
-    return 0;
+    return $left;
 }
 
 
 sub _Snuff {
     my( $me ) = @_;
-    $me->[_PUFFS] = [];
+    for my $puffs ( $me->[_PUFFS] ) {
+        return
+            if  ref $puffs && ! @$puffs;
+        $puffs = [];
+    }
     close $me->[_STOKE];
     close $me->[_SMOKE];
 }
@@ -260,29 +268,30 @@ sub _Smother {
     } else {
         ( $puffs ) = @$puffs;
     }
+
     my $eop;                    # Are we holding on to the EOP tokin'?
-        while( 1 ) {
-            my $puff = $me->_Bogart( $impatient, 'nil' );
-            if( ! defined $puff ) {     # Pipe empty:
-                last                    # Also, no tokins; all puffed out!
-                    if  ! $puffs && $eop;   # (We even drained the EOP.)
-                $me->_Stoke( $eop )     # Keep others shutting down.
-                    if  $eop;
-                $me->[_PUFFS] = [$puffs];
-                return $puffs + ($eop?0:1);    # Report: others need time.
-            }
-            if( $puff =~ /[^\0]/ ) {    # We eliminated another non-EOP tokin':
-                --$puffs;
-                if( $puffs && $eop ) {  # Others reading and no EOP in pipe:
-                    $me->_Stoke( $eop );    # Put the EOP back.
-                    $eop = '';
-                }
-            } else {                    # Got EOP, some tokins still out:
-                $eop = $puff;           # Note we may need to put the EOP back.
-            }
-            last                        # All puffed out!
-                if  ! $puffs && $eop;
+    while( 1 ) {
+        my $puff = $me->_Bogart( $impatient, 'nil' );
+        if( ! defined $puff ) {     # Pipe empty:
+            last                    # Also, no tokins; all puffed out!
+                if  ! $puffs && $eop;   # (We even drained the EOP.)
+            $me->_Stoke( $eop )     # Keep others shutting down.
+                if  $eop;
+            $me->[_PUFFS] = [$puffs];
+            return $puffs + ($eop?0:1);    # Report: others need time.
         }
+        if( $puff =~ /[^\0]/ ) {    # We eliminated another non-EOP tokin':
+            --$puffs;
+            if( $puffs && $eop ) {  # Others reading and no EOP in pipe:
+                $me->_Stoke( $eop );    # Put the EOP back.
+                $eop = '';
+            }
+        } else {                    # Got EOP, some tokins still out:
+            $eop = $puff;           # Note we may need to put the EOP back.
+        }
+        last                        # All puffed out!
+            if  ! $puffs && $eop;
+    }
     return 0;
 }
 
