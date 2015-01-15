@@ -12,6 +12,7 @@ BEGIN {
         bytes->import();
     }
 }
+use Time::HiRes qw< sleep >;
 use Errno       qw< EAGAIN EWOULDBLOCK >;
 use Fcntl       qw<
     O_WRONLY    O_RDONLY    O_NONBLOCK
@@ -262,35 +263,49 @@ sub _Snuff {
 sub _Smother {
     my( $me, $impatient ) = @_;
     my $puffs = $me->[_PUFFS];
-
-    if( ! ref $puffs ) {        # Our first try at shutting down.
-        $me->_Stoke( "\0" x $me->[_BYTES] );    # Send an EOP tokin'.
+    my $eop = "\0" x $me->[_BYTES]; # The End-Of-Pipe tokin'.
+    my $eops;                       # How many EOPs in pipe?
+    my $room;                       # How much room in pipe for EOP tokins?
+    if( ! ref $puffs ) {            # Our first try at shutting down:
+        $room = $eops = 0;          # Nothing drained, no EOPs sent.
     } else {
-        ( $puffs ) = @$puffs;
+        ( $puffs, $room, $eops ) = @$puffs;
     }
 
-    my $eop;                    # Are we holding on to the EOP tokin'?
-    while( 1 ) {
-        my $puff = $me->_Bogart( $impatient, 'nil' );
-        if( ! defined $puff ) {     # Pipe empty:
-            last                    # Also, no tokins; all puffed out!
-                if  ! $puffs && $eop;   # (We even drained the EOP.)
-            $me->_Stoke( $eop )     # Keep others shutting down.
-                if  $eop;
-            $me->[_PUFFS] = [$puffs];
-            return $puffs + ($eop?0:1);    # Report: others need time.
-        }
-        if( $puff =~ /[^\0]/ ) {    # We eliminated another non-EOP tokin':
-            --$puffs;
-            if( $puffs && $eop ) {  # Others reading and no EOP in pipe:
-                $me->_Stoke( $eop );    # Put the EOP back.
-                $eop = '';
+    my $left;
+    my $loops = 0;
+    while( 0 < ( $left = $puffs + $eops ) ) {
+        my $puff = $me->_Bogart(
+            $impatient || ! $eops,      # Don't wait before injecting EOP.
+            'nil' );
+        if( ! defined $puff ) {         # Pipe empty:
+            if( ! $room && ! $eops ) {  # "No room" but pipe empty:
+                $me->_Stoke( $eop ); ++$eops;   # Risk just 1 EOP.
             }
-        } else {                    # Got EOP, some tokins still out:
-            $eop = $puff;           # Note we may need to put the EOP back.
+        } elsif( $puff =~ /[^\0]/ ) {   # We eliminated another non-EOP tokin':
+            --$puffs;
+            ++$room if $room < 2;
+            $loops = 0;                 # Don't sleep while reaping tokins.
+        } else {
+            --$eops;                    # Got an EOP back.
         }
-        last                        # All puffed out!
-            if  ! $puffs && $eop;
+        last                            # All puffed out!
+            if  ! $puffs && ! $eops;
+        # Don't inject EOPs if would just cause $impatient to never return:
+        if(     ! $impatient        # If patient, then we might loop w/ sleep.
+            ||  ! defined $puff     # We are about to return, so inject.
+            ||  $puff =~ /[^\0]/    # We got a non-EOP tokin' so add more EOP.
+        ) {
+            while( $puffs && $eops < $room ) {
+                $me->_Stoke( $eop ); ++$eops;
+            }
+        }
+        if( $impatient && ! defined $puff ) {   # We had emptied the pipe:
+            $me->[_PUFFS] = [$puffs,$room,$eops];
+            return $left;                       # Report: Others need time.
+        }
+        sleep( 0.1 )                            # Don't do a tight CPU loop.
+            if  2 < ++$loops;
     }
     return 0;
 }
