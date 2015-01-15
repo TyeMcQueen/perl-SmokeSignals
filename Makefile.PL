@@ -16,6 +16,7 @@ WriteMakefile(
         'bytes' => 0,                   # in 'core'
         'Errno' => 0,                   # in 'core'
         'Fcntl' => 0,                   # in 'core'
+        'Time::HiRes' => 0,             # in 'core'
         # Testing only:
         'File::Basename' => 0,          # in 'core'
         'lib' => 0,                     # in 'core'
